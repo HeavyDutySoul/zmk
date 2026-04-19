@@ -78,6 +78,16 @@
 #define ZMK_HID_REPORT_ID_MOUSE 0x03
 #define ZMK_HID_REPORT_ID_BATTERY 0x04
 
+#if IS_ENABLED(CONFIG_ZMK_BATTERY_REPORTING_USB)
+#if IS_ENABLED(CONFIG_ZMK_SPLIT_BLE_CENTRAL_BATTERY_LEVEL_FETCHING)
+#define ZMK_HID_BATTERY_PERIPHERAL_COUNT CONFIG_ZMK_SPLIT_BLE_CENTRAL_PERIPHERALS
+#else
+#define ZMK_HID_BATTERY_PERIPHERAL_COUNT 0
+#endif
+#define ZMK_HID_BATTERY_SOURCE_COUNT (1 + ZMK_HID_BATTERY_PERIPHERAL_COUNT)
+#define ZMK_HID_BATTERY_LEVEL_UNKNOWN 0xFF
+#endif // IS_ENABLED(CONFIG_ZMK_BATTERY_REPORTING_USB)
+
 #ifndef HID_ITEM_TAG_PUSH
 #define HID_ITEM_TAG_PUSH 0xA
 #endif
@@ -262,13 +272,16 @@ static const uint8_t zmk_hid_report_desc[] = {
     HID_USAGE_PAGE(HID_USAGE_BATTERY_SYSTEM),
     HID_REPORT_ID(ZMK_HID_REPORT_ID_BATTERY),
 
+    // One byte per source: [0] = central/dongle, [1..N] = split peripherals.
+    // Value 0xFF means "not reported" (use LOGICAL_MAX8=255; hosts that only
+    // understand 0..100 will still show low-cardinality values correctly).
     HID_USAGE(HID_USAGE_BATTERY_SYSTEM_ABSOLUTE_STATE_OF_CHARGE),
     HID_LOGICAL_MIN8(0),
-    HID_LOGICAL_MAX8(100),
+    HID_LOGICAL_MAX8(0xFF),
     HID_PHYSICAL_MIN8(0),
     HID_PHYSICAL_MAX8(100),
     HID_REPORT_SIZE(0x08),
-    HID_REPORT_COUNT(0x01),
+    HID_REPORT_COUNT(ZMK_HID_BATTERY_SOURCE_COUNT),
     HID_INPUT(ZMK_HID_MAIN_VAL_DATA | ZMK_HID_MAIN_VAL_VAR | ZMK_HID_MAIN_VAL_ABS),
 
     HID_USAGE(HID_USAGE_BATTERY_SYSTEM_CHARGING),
@@ -374,7 +387,7 @@ struct zmk_hid_mouse_resolution_feature_report {
 
 struct zmk_hid_battery_report {
     uint8_t report_id;
-    uint8_t battery_level;
+    uint8_t level[ZMK_HID_BATTERY_SOURCE_COUNT];
     uint8_t charging;
 } __packed;
 
@@ -420,7 +433,9 @@ void zmk_hid_mouse_clear(void);
 #endif // IS_ENABLED(CONFIG_ZMK_POINTING)
 
 #if IS_ENABLED(CONFIG_ZMK_BATTERY_REPORTING_USB)
-void zmk_hid_battery_set(uint8_t battery_level);
+// source: 0 = central/dongle, 1..N = split peripheral with index source-1.
+// level: 0..100 for a real reading, ZMK_HID_BATTERY_LEVEL_UNKNOWN (0xFF) for "not reported".
+void zmk_hid_battery_set(uint8_t source, uint8_t level);
 #endif // IS_ENABLED(CONFIG_ZMK_BATTERY_REPORTING_USB)
 
 struct zmk_hid_keyboard_report *zmk_hid_get_keyboard_report(void);

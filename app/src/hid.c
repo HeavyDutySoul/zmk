@@ -36,7 +36,10 @@ static struct zmk_hid_mouse_report mouse_report = {
 #if IS_ENABLED(CONFIG_ZMK_BATTERY_REPORTING_USB)
 
 static struct zmk_hid_battery_report battery_report = {
-    .report_id = ZMK_HID_REPORT_ID_BATTERY, .battery_level = 0, .charging = 0};
+    .report_id = ZMK_HID_REPORT_ID_BATTERY,
+    .level = {[0 ...(ZMK_HID_BATTERY_SOURCE_COUNT - 1)] = ZMK_HID_BATTERY_LEVEL_UNKNOWN},
+    .charging = 0,
+};
 
 #endif // IS_ENABLED(CONFIG_ZMK_BATTERY_REPORTING_USB)
 
@@ -477,11 +480,14 @@ void zmk_hid_mouse_clear(void) {
 
 #if IS_ENABLED(CONFIG_ZMK_BATTERY_REPORTING_USB)
 
-void zmk_hid_battery_set(uint8_t battery_level) {
-    if (battery_level > 100) {
-        battery_level = 100;
+void zmk_hid_battery_set(uint8_t source, uint8_t level) {
+    if (source >= ZMK_HID_BATTERY_SOURCE_COUNT) {
+        return;
     }
-    battery_report.battery_level = battery_level;
+    if (level != ZMK_HID_BATTERY_LEVEL_UNKNOWN && level > 100) {
+        level = 100;
+    }
+    battery_report.level[source] = level;
 }
 
 #endif // IS_ENABLED(CONFIG_ZMK_BATTERY_REPORTING_USB)
