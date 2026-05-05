@@ -395,6 +395,15 @@ config ZMK_BATTERY_REPORTING_FETCH_MODE_LITHIUM_VOLTAGE
 
 endchoice
 
+config ZMK_BATTERY_REPORTING_USB
+    bool "Report battery level over USB HID"
+    depends on ZMK_USB
+    help
+      Adds a Power Device / Battery System HID report (report ID 0x04)
+      that exposes the aggregated minimum battery level across the local
+      device and any split peripherals. Useful for USB dongles that proxy
+      battery info from split halves to the host over USB HID.
+
 endif # ZMK_BATTERY_REPORTING
 
 config ZMK_IDLE_TIMEOUT
