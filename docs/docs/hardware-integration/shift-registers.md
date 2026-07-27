@@ -9,13 +9,11 @@ Shift registers are the recommended method of adding additional GPIO pins to MCU
 This page assumes that you are using a SIPO shift register with the part number 74HC595. Other shift registers can work as well but this is the most commonly used one.
 :::
 
-:::tip
 To understand how shift registers work, we recommend reading through ["How does the 74HC595 Shift Register work?"](https://lastminuteengineers.com/74hc595-shift-register-arduino-tutorial/#how-does-the-74hc595-shift-register-work).
-:::
 
 ## Design Guidelines
 
-The shift register output pins should act as MCU outputs in your design. All MCU inputs should remain connected directly to MCU/board pins. This is to allow the inputs to trigger "interrupts" on the MCU/board, upon which it will begin scanning the keys. Using a shift register for MCU inputs is also possible, but requires you to use a PISO shift register and will harm your battery life. Note that a [direct kscan](../../config/kscan.md#direct-gpio-driver) keyboard does not have any MCU output pins, but a diodeless keyboard is still possible by making use of a single row pin and using the [matrix kscan](../../config/kscan.md#matrix-driver) driver.
+The shift register output pins should act as MCU outputs in your design. All MCU inputs should remain connected directly to MCU/board pins. This is to allow the inputs to trigger "interrupts" on the MCU/board, upon which it will begin scanning the keys. Using a shift register for MCU inputs is also possible, but requires you to use a PISO shift register and will harm your battery life. Note that a [direct kscan](../config/kscan.md#direct-gpio-driver) keyboard does not have any MCU output pins, but a diodeless keyboard is still possible by making use of a single row pin and using the [matrix kscan](../config/kscan.md#matrix-driver) driver.
 
 :::info
 In a diode matrix, MCU output pins are those connected to the [anodes of your diodes](https://learn.sparkfun.com/tutorials/diodes/all#ideal-diodes). You most likely will need to rearrange your matrix to maximize the use of shift register output pins, in order to reduce the total number of GPIO pins connected to your MCU. For example, a 9 column 5 row `col2row` matrix could be rearranged to use 16 columns and 3 rows.
@@ -25,7 +23,7 @@ You will want to make sure that the data and clock pins of the shift register ar
 
 ZMK allows you to daisy-chain up to four shift registers. Below is a fragment of a schematic showing two shift registers that are daisy-chained.
 
-![A fragment of a schematic featuring two shift registers daisy chained together.](../../assets/hardware-integration/shift-register-daisy.png)
+![A fragment of a schematic featuring two shift registers daisy chained together.](../assets/hardware-integration/shift-register-daisy.png)
 
 ## Configuration
 
