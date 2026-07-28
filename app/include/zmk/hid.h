@@ -77,22 +77,6 @@
 #define ZMK_HID_REPORT_ID_CONSUMER 0x02
 #define ZMK_HID_REPORT_ID_MOUSE 0x03
 #define ZMK_HID_REPORT_ID_BATTERY 0x04
-// Support for multiple battery reports
-#define ZMK_HID_REPORT_ID_BATTERY_BASE 0x04
-
-// Number of battery reports - determined by device tree configuration
-#if IS_ENABLED(CONFIG_ZMK_BATTERY_REPORTING_USB)
-#if DT_HAS_CHOSEN(zmk_battery_reporting)
-// Count child nodes using DT_FOREACH_CHILD pattern (see app/src/backlight.c)
-#define ZMK_HID_BATTERY_CHILD_COUNT(...) +1
-#define ZMK_HID_NUM_BATTERIES(node_id) (0 DT_FOREACH_CHILD(node_id, ZMK_HID_BATTERY_CHILD_COUNT))
-#define ZMK_HID_MAX_BATTERIES ZMK_HID_NUM_BATTERIES(DT_CHOSEN(zmk_battery_reporting))
-#else
-#define ZMK_HID_MAX_BATTERIES 1
-#endif
-#else
-#define ZMK_HID_MAX_BATTERIES 1
-#endif
 
 #ifndef HID_ITEM_TAG_PUSH
 #define HID_ITEM_TAG_PUSH 0xA
@@ -272,45 +256,6 @@ static const uint8_t zmk_hid_report_desc[] = {
 #endif // IS_ENABLED(CONFIG_ZMK_POINTING)
 
 #if !defined(SUPPRESS_BATTERY_HID_REPORT) && IS_ENABLED(CONFIG_ZMK_BATTERY_REPORTING_USB)
-// Define a battery report descriptor for each battery
-#define ZMK_HID_BATTERY_REPORT_DESC(IDX, _) \
-    HID_USAGE_PAGE(HID_USAGE_POWER), \
-    HID_USAGE(HID_USAGE_POWER_POWER_SUPPLY), \
-    HID_COLLECTION(HID_COLLECTION_APPLICATION), \
-    HID_USAGE_PAGE(HID_USAGE_BATTERY_SYSTEM), \
-    HID_REPORT_ID(ZMK_HID_REPORT_ID_BATTERY_BASE + IDX), \
-    \
-    HID_USAGE(HID_USAGE_BATTERY_SYSTEM_ABSOLUTE_STATE_OF_CHARGE), \
-    HID_LOGICAL_MIN8(0), \
-    HID_LOGICAL_MAX8(100), \
-    HID_PHYSICAL_MIN8(0), \
-    HID_PHYSICAL_MAX8(100), \
-    HID_REPORT_SIZE(0x08), \
-    HID_REPORT_COUNT(0x01), \
-    HID_INPUT(ZMK_HID_MAIN_VAL_DATA | ZMK_HID_MAIN_VAL_VAR | ZMK_HID_MAIN_VAL_ABS), \
-    \
-    HID_USAGE(HID_USAGE_BATTERY_SYSTEM_CHARGING), \
-    HID_LOGICAL_MIN8(0), \
-    HID_LOGICAL_MAX8(1), \
-    HID_PHYSICAL_MIN8(0), \
-    HID_PHYSICAL_MAX8(1), \
-    HID_REPORT_SIZE(0x08), \
-    HID_REPORT_COUNT(0x01), \
-    HID_INPUT(ZMK_HID_MAIN_VAL_DATA | ZMK_HID_MAIN_VAL_VAR | ZMK_HID_MAIN_VAL_ABS), \
-    \
-    HID_END_COLLECTION,
-
-// Generate battery report descriptors from device tree
-// Each non-hidden battery in the zmk_battery_reporting node gets a descriptor
-#if DT_HAS_CHOSEN(zmk_battery_reporting)
-#define ZMK_HID_BATTERY_REPORT_DESC_DT(node_id) \
-    COND_CODE_0(DT_PROP(node_id, hidden), \
-                (ZMK_HID_BATTERY_REPORT_DESC(DT_NODE_CHILD_IDX(node_id), _)), \
-                ())
-
-DT_FOREACH_CHILD(DT_CHOSEN(zmk_battery_reporting), ZMK_HID_BATTERY_REPORT_DESC_DT)
-#else
-    // Fallback to a single battery report descriptor for boards without zmk_battery_reporting
     HID_USAGE_PAGE(HID_USAGE_POWER),
     HID_USAGE(HID_USAGE_POWER_POWER_SUPPLY),
     HID_COLLECTION(HID_COLLECTION_APPLICATION),
@@ -336,7 +281,6 @@ DT_FOREACH_CHILD(DT_CHOSEN(zmk_battery_reporting), ZMK_HID_BATTERY_REPORT_DESC_D
     HID_INPUT(ZMK_HID_MAIN_VAL_DATA | ZMK_HID_MAIN_VAL_VAR | ZMK_HID_MAIN_VAL_ABS),
 
     HID_END_COLLECTION,
-#endif
 #endif
 };
 
@@ -476,7 +420,7 @@ void zmk_hid_mouse_clear(void);
 #endif // IS_ENABLED(CONFIG_ZMK_POINTING)
 
 #if IS_ENABLED(CONFIG_ZMK_BATTERY_REPORTING_USB)
-void zmk_hid_battery_set(uint8_t battery_index, uint8_t battery_level);
+void zmk_hid_battery_set(uint8_t battery_level);
 #endif // IS_ENABLED(CONFIG_ZMK_BATTERY_REPORTING_USB)
 
 struct zmk_hid_keyboard_report *zmk_hid_get_keyboard_report(void);
@@ -491,5 +435,5 @@ struct zmk_hid_mouse_report *zmk_hid_get_mouse_report();
 #endif // IS_ENABLED(CONFIG_ZMK_POINTING)
 
 #if IS_ENABLED(CONFIG_ZMK_BATTERY_REPORTING_USB)
-struct zmk_hid_battery_report *zmk_hid_get_battery_report(uint8_t battery_index);
+struct zmk_hid_battery_report *zmk_hid_get_battery_report();
 #endif // IS_ENABLED(CONFIG_ZMK_BATTERY_REPORTING_USB)

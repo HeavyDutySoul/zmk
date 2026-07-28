@@ -86,9 +86,8 @@ static int get_report_cb(const struct device *dev, struct usb_setup_packet *setu
             return -ENOTSUP;
         }
         break;
-    case HID_REPORT_TYPE_INPUT: {
-        uint8_t report_id = setup->wValue & HID_GET_REPORT_ID_MASK;
-        switch (report_id) {
+    case HID_REPORT_TYPE_INPUT:
+        switch (setup->wValue & HID_GET_REPORT_ID_MASK) {
         case ZMK_HID_REPORT_ID_KEYBOARD: {
             size_t size;
             *data = get_keyboard_report(&size);
@@ -103,31 +102,17 @@ static int get_report_cb(const struct device *dev, struct usb_setup_packet *setu
         }
 #if IS_ENABLED(CONFIG_ZMK_BATTERY_REPORTING_USB)
         case ZMK_HID_REPORT_ID_BATTERY: {
-            struct zmk_hid_battery_report *report = zmk_hid_get_battery_report(0);
+            struct zmk_hid_battery_report *report = zmk_hid_get_battery_report();
             *data = (uint8_t *)report;
             *len = sizeof(*report);
             break;
         }
 #endif // IS_ENABLED(CONFIG_ZMK_BATTERY_REPORTING_USB)
         default:
-#if IS_ENABLED(CONFIG_ZMK_BATTERY_REPORTING_USB)
-            if (report_id >= ZMK_HID_REPORT_ID_BATTERY_BASE &&
-                report_id < ZMK_HID_REPORT_ID_BATTERY_BASE + ZMK_HID_MAX_BATTERIES) {
-                uint8_t battery_index = report_id - ZMK_HID_REPORT_ID_BATTERY_BASE;
-                struct zmk_hid_battery_report *report = zmk_hid_get_battery_report(battery_index);
-                if (report == NULL) {
-                    return -EINVAL;
-                }
-                *data = (uint8_t *)report;
-                *len = sizeof(*report);
-                break;
-            }
-#endif // IS_ENABLED(CONFIG_ZMK_BATTERY_REPORTING_USB)
             LOG_ERR("Invalid report ID %d requested", setup->wValue & HID_GET_REPORT_ID_MASK);
             return -EINVAL;
         }
         break;
-    }
     default:
         /*
          * 7.2.1 of the HID v1.11 spec is unclear about handling requests for reports that do not
@@ -259,23 +244,15 @@ int zmk_usb_hid_send_mouse_report() {
 #endif // IS_ENABLED(CONFIG_ZMK_POINTING)
 
 #if IS_ENABLED(CONFIG_ZMK_BATTERY_REPORTING_USB)
-int zmk_usb_hid_send_battery_report_by_index(uint8_t battery_index) {
+int zmk_usb_hid_send_battery_report() {
 #if IS_ENABLED(CONFIG_ZMK_USB_BOOT)
     if (hid_protocol == HID_PROTOCOL_BOOT) {
         return -ENOTSUP;
     }
 #endif /* IS_ENABLED(CONFIG_ZMK_USB_BOOT) */
 
-    struct zmk_hid_battery_report *report = zmk_hid_get_battery_report(battery_index);
-    if (report == NULL) {
-        return -EINVAL;
-    }
+    struct zmk_hid_battery_report *report = zmk_hid_get_battery_report();
     return zmk_usb_hid_send_report((uint8_t *)report, sizeof(*report));
-}
-
-// Legacy function for backwards compatibility - sends first battery
-int zmk_usb_hid_send_battery_report() {
-    return zmk_usb_hid_send_battery_report_by_index(0);
 }
 #endif // IS_ENABLED(CONFIG_ZMK_BATTERY_REPORTING_USB)
 
